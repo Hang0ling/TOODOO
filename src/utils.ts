@@ -111,3 +111,15 @@ export const getPaperColorClass = (color: PaperColor, theme: Theme) => {
     default: return 'bg-[#fff475] text-slate-900';
   }
 };
+
+export const checkIntersection = (
+  box: { x: number; y: number; w: number; h: number },
+  item: { x: number; y: number; w: number; h: number }
+) => {
+  return (
+    box.x < item.x + item.w &&
+    box.x + box.w > item.x &&
+    box.y < item.y + item.h &&
+    box.y + box.h > item.y
+  );
+};

@@ -8,8 +8,9 @@ interface PaperStripProps {
   todo: Todo;
   theme: Theme;
   onComplete: (id: string) => void;
-  onUpdatePosition: (id: string, x: number, y: number, pointer: { x: number, y: number }) => void;
+  onUpdatePosition: (id: string, x: number, y: number, pointer: { x: number, y: number }, delta: { x: number, y: number }) => void;
   onBringToFront: (id: string) => void;
+  onDrag: (point: { x: number, y: number }) => void;
 }
 
 export const PaperStrip: React.FC<PaperStripProps> = ({ 
@@ -17,10 +18,11 @@ export const PaperStrip: React.FC<PaperStripProps> = ({
   theme,
   onComplete, 
   onUpdatePosition,
-  onBringToFront
+  onBringToFront,
+  onDrag
 }) => {
   
-  // Dimensions based on isLarge flag
+  // Dimensions based on isLarge flag (approximate for layout, exact for Tailwind)
   const widthClass = todo.isLarge ? 'w-80' : 'w-64';
   const heightStyle = todo.isLarge ? { height: '240px' } : { height: 'auto', minHeight: '120px' };
 
@@ -35,7 +37,9 @@ export const PaperStrip: React.FC<PaperStripProps> = ({
           opacity: 'opacity-95',
           tape: false,
           checkBtn: 'bg-black/5 hover:bg-green-500 hover:text-white rounded-full p-1',
-          dateStyle: 'text-xs text-gray-400 font-sans'
+          dateStyle: 'text-[10px] text-gray-400 font-sans',
+          textSize: todo.isLarge ? "text-base" : "text-sm", // Smaller font for minimal
+          textColor: "font-normal text-gray-600"
         };
       case 'cartoon':
         return {
@@ -45,7 +49,9 @@ export const PaperStrip: React.FC<PaperStripProps> = ({
           opacity: 'opacity-100',
           tape: false,
           checkBtn: 'bg-white border-2 border-black hover:bg-green-400 text-black rounded-md p-1',
-          dateStyle: 'text-xs font-bold text-black/70'
+          dateStyle: 'text-xs font-bold text-black/70',
+          textSize: todo.isLarge ? "text-lg" : "text-xl",
+          textColor: "font-bold text-black"
         };
       case 'retro':
       default:
@@ -56,7 +62,9 @@ export const PaperStrip: React.FC<PaperStripProps> = ({
           opacity: 'opacity-100',
           tape: true,
           checkBtn: 'text-black/20 hover:text-green-700',
-          dateStyle: 'text-[10px] opacity-50 font-mono tracking-tight'
+          dateStyle: 'text-[10px] opacity-50 font-mono tracking-tight',
+          textSize: todo.isLarge ? "text-lg" : "text-xl",
+          textColor: "font-medium opacity-90 text-[#2a2a2a]"
         };
     }
   };
@@ -82,24 +90,33 @@ export const PaperStrip: React.FC<PaperStripProps> = ({
           opacity: 1,
           zIndex: todo.zIndex
         }}
+        onDrag={(event, info) => {
+          onDrag(info.point);
+        }}
         onDragEnd={(event, info) => {
           onUpdatePosition(
               todo.id, 
               todo.x + info.offset.x, 
               todo.y + info.offset.y,
-              info.point
+              info.point,
+              { x: info.offset.x, y: info.offset.y } // Pass the full offset (delta from start of drag)
           );
         }}
-        onPointerDown={() => onBringToFront(todo.id)}
+        onPointerDown={(e) => {
+           // Prevent selection box from starting when clicking a note
+           e.stopPropagation(); 
+           onBringToFront(todo.id);
+        }}
         whileHover={{ scale: 1.02, cursor: 'grab' }}
         whileDrag={{ scale: 1.05, cursor: 'grabbing', rotate: 0, zIndex: 9999 }}
         className={cn(
-          "absolute flex flex-col justify-between select-none p-4 pt-5",
+          "absolute flex flex-col justify-between select-none p-4 pt-5 transition-[outline]",
           getPaperColorClass(todo.color, theme),
           styles.font,
           styles.shadow,
           styles.borderRadius,
-          widthClass
+          widthClass,
+          todo.isSelected && "outline outline-2 outline-offset-2 outline-blue-400"
         )}
         style={{
           ...heightStyle,
@@ -131,10 +148,8 @@ export const PaperStrip: React.FC<PaperStripProps> = ({
         <div className="flex-1 mb-2 mt-1 overflow-y-auto custom-scrollbar pr-1 relative">
           <p className={cn(
               "leading-snug break-words whitespace-pre-wrap",
-              todo.isLarge ? "text-lg" : "text-xl",
-              theme === 'retro' ? "font-medium opacity-90 text-[#2a2a2a]" : "",
-              theme === 'minimal' ? "font-normal text-gray-700" : "",
-              theme === 'cartoon' ? "font-bold text-black" : ""
+              styles.textSize,
+              styles.textColor
           )}>
             {todo.text}
           </p>

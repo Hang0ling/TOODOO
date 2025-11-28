@@ -12,9 +12,10 @@ export interface Todo {
   rotation: number;
   zIndex: number;
   isLarge: boolean;
+  isSelected?: boolean;
 }
 
-export interface CompletedTodo extends Omit<Todo, 'x' | 'y' | 'rotation' | 'zIndex'> {
+export interface CompletedTodo extends Omit<Todo, 'x' | 'y' | 'rotation' | 'zIndex' | 'isSelected'> {
   completedAt: number; // Timestamp
 }
 
