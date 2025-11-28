@@ -1,19 +1,58 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LayoutGrid, Trash2, Palette, Monitor, Sun } from 'lucide-react';
 import { Todo, CompletedTodo, PaperColor, Theme } from './types';
-import { generateId, getRandomRotation, formatTime, getHeaderDateParts, cn, checkIntersection } from './utils';
+import { generateId, formatTime, getHeaderDateParts, cn, checkIntersection } from './utils';
 import { PaperStrip } from './components/PaperStrip';
 import { Printer } from './components/Printer';
 import { StorageDrawer } from './components/StorageDrawer';
 
 const App: React.FC = () => {
-  const [todos, setTodos] = useState<Todo[]>([]);
-  const [completedTodos, setCompletedTodos] = useState<CompletedTodo[]>([]);
+  // --- STATE WITH PERSISTENCE ---
+
+  // Load Todos from LocalStorage
+  const [todos, setTodos] = useState<Todo[]>(() => {
+    try {
+      const saved = localStorage.getItem('retro-todos');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Failed to load todos", e);
+      return [];
+    }
+  });
+
+  // Load Completed Todos from LocalStorage
+  const [completedTodos, setCompletedTodos] = useState<CompletedTodo[]>(() => {
+    try {
+      const saved = localStorage.getItem('retro-completed-todos');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Failed to load completed todos", e);
+      return [];
+    }
+  });
+
+  // Load Theme from LocalStorage
+  const [theme, setTheme] = useState<Theme>(() => {
+    return (localStorage.getItem('retro-theme') as Theme) || 'retro';
+  });
+
+  // Initialize Max Z-Index based on loaded items to prevent overlap issues
+  const [maxZIndex, setMaxZIndex] = useState(() => {
+    try {
+      const saved = localStorage.getItem('retro-todos');
+      if (saved) {
+        const parsed: Todo[] = JSON.parse(saved);
+        if (parsed.length > 0) {
+          return Math.max(...parsed.map(t => t.zIndex)) + 1;
+        }
+      }
+    } catch (e) {}
+    return 100;
+  });
+
   const [currentTime, setCurrentTime] = useState(new Date());
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [maxZIndex, setMaxZIndex] = useState(1);
   const [isHoveringTrash, setIsHoveringTrash] = useState(false);
-  const [theme, setTheme] = useState<Theme>('retro');
   
   // Organization State: 0 (Messy), 1 (Columns), 2 (Colors), 3 (Grid)
   const [organizeMode, setOrganizeMode] = useState<number>(0);
@@ -25,6 +64,20 @@ const App: React.FC = () => {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const trashRef = useRef<HTMLDivElement>(null);
+
+  // --- PERSISTENCE EFFECTS ---
+
+  useEffect(() => {
+    localStorage.setItem('retro-todos', JSON.stringify(todos));
+  }, [todos]);
+
+  useEffect(() => {
+    localStorage.setItem('retro-completed-todos', JSON.stringify(completedTodos));
+  }, [completedTodos]);
+
+  useEffect(() => {
+    localStorage.setItem('retro-theme', theme);
+  }, [theme]);
 
   // Time ticker
   useEffect(() => {
