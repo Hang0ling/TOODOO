@@ -14,7 +14,7 @@ interface StorageDrawerProps {
 
 export const StorageDrawer: React.FC<StorageDrawerProps> = ({ completedTodos, isOpen, setIsOpen, theme }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedDate, setExpandedDate] = useState<string | null>(null);
+  const [expandedDates, setExpandedDates] = useState<string[]>([]);
 
   // Group items by date
   const folders: FolderType[] = useMemo(() => {
@@ -43,7 +43,11 @@ export const StorageDrawer: React.FC<StorageDrawerProps> = ({ completedTodos, is
   }, [folders, searchQuery]);
 
   const toggleFolder = (date: string) => {
-    setExpandedDate(expandedDate === date ? null : date);
+    setExpandedDates(prev => 
+      prev.includes(date) 
+        ? prev.filter(d => d !== date) 
+        : [...prev, date]
+    );
   };
 
   // Theme Config
@@ -146,7 +150,7 @@ export const StorageDrawer: React.FC<StorageDrawerProps> = ({ completedTodos, is
                     )}
 
                     {filteredFolders.map((folder) => {
-                        const isExpanded = expandedDate === folder.date;
+                        const isExpanded = expandedDates.includes(folder.date);
                         return (
                             <div key={folder.date} className="relative group">
                                 {/* Folder Header */}
